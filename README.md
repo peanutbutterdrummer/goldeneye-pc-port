@@ -1,5 +1,11 @@
 # GoldenEye 007 PC Port
 
+> **This fork (`rg34xx` branch)** adds a native aarch64 build for Anbernic
+> H700 handhelds (RG34XX / RG35XX family) on the stock firmware. For install
+> steps, the list of changes and build instructions, see
+> [`rg34xx/README.md`](rg34xx/README.md). The ready-to-copy zip is on the
+> [Releases](../../releases) page. Everything below is the upstream README.
+
 [![CI](https://github.com/jkdansereau/goldeneye-pc-port/actions/workflows/ci.yml/badge.svg)](https://github.com/jkdansereau/goldeneye-pc-port/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/jkdansereau/goldeneye-pc-port?include_prereleases&label=download)](https://github.com/jkdansereau/goldeneye-pc-port/releases)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20Steam%20Deck-blue)
