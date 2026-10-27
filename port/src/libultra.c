@@ -438,6 +438,28 @@ static void *portAllocLowStack(size_t sz)
                    , -1, 0);
     if (p != MAP_FAILED)
         return p;
+#else
+    /* No MAP_32BIT (aarch64): ask for an address hint in [0x30000000,
+     * 0x40000000), which sits between the image (0x20000000) and the D131
+     * module range (0x40000000), and keep it only if the kernel honoured it. */
+    static uintptr_t hint = 0x30000000u;
+    while (hint + sz <= 0x40000000u) {
+        void *p = mmap((void *)hint, sz, PROT_READ | PROT_WRITE,
+                       MAP_PRIVATE | MAP_ANONYMOUS
+#if defined(MAP_FIXED_NOREPLACE)
+                       | MAP_FIXED_NOREPLACE
+#endif
+#if defined(MAP_STACK)
+                       | MAP_STACK
+#endif
+                       , -1, 0);
+        hint += (sz + 0xffffu) & ~(uintptr_t)0xffffu;
+        if (p == MAP_FAILED)
+            continue;
+        if ((uintptr_t)p + sz <= 0x80000000u)
+            return p;
+        munmap(p, sz);
+    }
 #endif
     return NULL;
 }

@@ -1,0 +1,4 @@
+#!/bin/sh
+# ge007-convert: runs the bundled converter on the device's python3
+# (upstream ships a PyInstaller-frozen x86 binary under this name).
+exec /usr/bin/env python3 "$(dirname "$0")/prepare-assets.py" "$@"

@@ -75,6 +75,7 @@
 #include <string.h>
 
 #include <SDL.h>
+#include "sdl_compat.h"
 
 #include "platform.h"
 #include "system.h"

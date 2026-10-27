@@ -19,6 +19,7 @@
 #endif
 
 #include <SDL.h>
+#include "sdl_compat.h"
 
 #include "platform.h"
 #include "system.h"
@@ -216,6 +217,6 @@ const char *updateCheckAvailable(void)
 
 void updateCheckOpenReleases(void)
 {
-    if (SDL_OpenURL(UC_RELEASES) != 0)
+    if (!SDL_COMPAT_HAVE_OPENURL() || SDL_OpenURL(UC_RELEASES) != 0)
         sysLogPrintf(LOG_INFO, "update check: could not open browser: %s", SDL_GetError());
 }
