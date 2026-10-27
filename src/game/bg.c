@@ -343,7 +343,11 @@ void sub_GAME_7F0B37EC(void) {
     u32 masked;
 
     ptr = (u8 *)specialportalarray;
+#ifdef PORT
+    end = (u8 *)specialportalarray + sizeof(specialportalarray);
+#else
     end = (u8 *)&g_BgCurrentRoom;
+#endif
 
     do {
         if (levelentry_index == *ptr++) {
@@ -376,7 +380,7 @@ void sub_GAME_7F0B37EC(void) {
         }
 
         ptr++;
-    } while ((u32)ptr < (u32)end);
+    } while ((uintptr_t)ptr < (uintptr_t)end);
 }
 
 

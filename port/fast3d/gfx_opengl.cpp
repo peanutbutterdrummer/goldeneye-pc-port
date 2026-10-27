@@ -252,7 +252,7 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
     vs_len += sprintf(vs_buf + vs_len, "#version %s\n", gl_glsl_version_str);
 
     if (gl_es) {
-        append_line(vs_buf, &vs_len, "precision mediump float;");
+        append_line(vs_buf, &vs_len, "precision highp float;");
     }
 
     if (gl_glsl_version >= 130) {
@@ -338,7 +338,11 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
     fs_len += sprintf(fs_buf + fs_len, "#version %s\n", gl_glsl_version_str);
 
     if (gl_es) {
+        append_line(fs_buf, &fs_len, "#ifdef GL_FRAGMENT_PRECISION_HIGH");
+        append_line(fs_buf, &fs_len, "precision highp float;");
+        append_line(fs_buf, &fs_len, "#else");
         append_line(fs_buf, &fs_len, "precision mediump float;");
+        append_line(fs_buf, &fs_len, "#endif");
     }
 
     if (gl_glsl_version >= 130) {

@@ -5,6 +5,8 @@ Idempotent; run from the repo root. Changes:
  1. 64-bit layout fixes guarded by __x86_64__ also apply to __aarch64__
  2. SDL 2.0.12 headers (stock Anbernic firmware): define the few newer names
  3. game-thread stacks below 2 GiB without MAP_32BIT (aarch64 has none)
+ 4. bg.c special-portal walk bounded by its own array (level-start hang)
+ 5. GLES shaders use highp floats (mediump = fp16 on Mali: sky/texture errors)
 """
 import re, sys
 from pathlib import Path
@@ -116,5 +118,44 @@ LOWSTACK_NEW = '''    if (p != MAP_FAILED)
 }'''
 edit('port/src/libultra.c', lambda s: s if 'No MAP_32BIT (aarch64)' in s else s.replace(LOWSTACK_OLD, LOWSTACK_NEW, 1))
 assert 'No MAP_32BIT (aarch64)' in (root / 'port/src/libultra.c').read_text()
+
+# 4. bg.c: the special-portal walk ends at &g_BgCurrentRoom, i.e. it assumes
+# that variable follows specialportalarray in memory (true on N64, and by luck
+# on the x86-64 builds). The aarch64 layout differs, so the walk ran into
+# unrelated bytes and a 0xff wrapped the u8 portal counter forever: the game
+# hung at the start of a level with music still playing. Bound it by the array.
+BG_OLD = '''    ptr = (u8 *)specialportalarray;
+    end = (u8 *)&g_BgCurrentRoom;
+'''
+BG_NEW = '''    ptr = (u8 *)specialportalarray;
+#ifdef PORT
+    end = (u8 *)specialportalarray + sizeof(specialportalarray);
+#else
+    end = (u8 *)&g_BgCurrentRoom;
+#endif
+'''
+edit('src/game/bg.c', lambda s: s if BG_NEW in s else s.replace(BG_OLD, BG_NEW, 1))
+edit('src/game/bg.c', lambda s: s.replace(
+    '    } while ((u32)ptr < (u32)end);\n}',
+    '    } while ((uintptr_t)ptr < (uintptr_t)end);\n}', 1))
+assert BG_NEW in (root / 'src/game/bg.c').read_text()
+
+# 5. GLES shaders asked for mediump floats, which Mali implements as fp16:
+# texture coordinates on big/repeating textures and the horizon-scale sky
+# (CPU-built float vertices) lost precision -> wrong textures, black sky at
+# some view angles. Desktop GL ignores precision qualifiers, so upstream never
+# saw it. Use highp (vertex shaders always have it; fragment where offered).
+GLSL = 'port/fast3d/gfx_opengl.cpp'
+VS_OLD = '        append_line(vs_buf, &vs_len, "precision mediump float;");\n'
+VS_NEW = '        append_line(vs_buf, &vs_len, "precision highp float;");\n'
+FS_OLD = '        append_line(fs_buf, &fs_len, "precision mediump float;");\n'
+FS_NEW = ('        append_line(fs_buf, &fs_len, "#ifdef GL_FRAGMENT_PRECISION_HIGH");\n'
+          '        append_line(fs_buf, &fs_len, "precision highp float;");\n'
+          '        append_line(fs_buf, &fs_len, "#else");\n'
+          '        append_line(fs_buf, &fs_len, "precision mediump float;");\n'
+          '        append_line(fs_buf, &fs_len, "#endif");\n')
+edit(GLSL, lambda s: s.replace(VS_OLD, VS_NEW, 1))
+edit(GLSL, lambda s: s if FS_NEW in s else s.replace(FS_OLD, FS_NEW, 1))
+assert VS_NEW in (root / GLSL).read_text() and FS_NEW in (root / GLSL).read_text()
 
 print('changed:', *changed, sep='\n  ') if changed else print('nothing to change')

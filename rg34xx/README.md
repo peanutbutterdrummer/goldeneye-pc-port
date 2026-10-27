@@ -6,7 +6,8 @@ full campaign. It is not an emulator. Rendering uses the port's existing
 OpenGL ES 3 path on the Mali-G31, and the game reads the pad directly with
 modern dual-analog controls.
 
-Built and tested on an RG34XXSP (stock firmware 20250408).
+Built and tested on an RG34XXSP (stock firmware 20250408). Other H700
+devices on the same stock firmware should work too, but they are untested.
 
 ## Install
 
@@ -42,6 +43,19 @@ Built and tested on an RG34XXSP (stock firmware 20250408).
 * **SDL 2.0.12.** The firmware ships SDL 2.0.12, which is older than the
   port expects. `port/include/sdl_compat.h` defines the few newer hint and
   enum names, and makes `SDL_OpenURL` a weak symbol.
+* **Level-start hang (`src/game/bg.c`).** The special-portal walk in
+  `sub_GAME_7F0B37EC` stops at `&g_BgCurrentRoom`. That only works if the
+  variable follows `specialportalarray` in memory, which is true on the N64
+  and, by luck, in the x86-64 builds. On aarch64 the walk ran into unrelated
+  bytes, and a `0xff` wrapped its `u8` counter forever. The game stopped
+  rendering at the start of a level while the music kept playing. The walk
+  is now bounded by the array itself.
+* **GLES precision (`port/fast3d/gfx_opengl.cpp`).** The shaders asked for
+  `mediump` floats, which Mali implements as fp16. The horizon-scale sky
+  and texture coordinates on large textures lost precision, so the sky was
+  black at some view angles and some textures were wrong. The shaders now
+  use `highp`. Desktop GL ignores precision qualifiers, which is why
+  upstream never saw this.
 
 ## Building (on the device)
 
